@@ -6,9 +6,15 @@ DB_FILE = "used.json"
 
 @app.route('/check', methods=['POST'])
 def check():
+    # ... โค้ดเดิมของคุณ ...
     data = request.get_json()
     key, hwid = data.get("key"), data.get("hwid")
-    db = json.load(open(DB_FILE)) if os.path.exists(DB_FILE) else {}
+    # เพิ่มการอ่านไฟล์ให้ปลอดภัยขึ้น
+    if not os.path.exists(DB_FILE):
+        return jsonify({"status": "error", "message": "Database not found"})
+    
+    with open(DB_FILE, 'r') as f:
+        db = json.load(f)
     
     if key not in db: return jsonify({"status": "invalid"})
     
@@ -19,10 +25,15 @@ def check():
     # เช็ก/ผูก HWID
     if db[key]["hwid"] == "":
         db[key]["hwid"] = hwid
-        json.dump(db, open(DB_FILE, "w"), indent=4)
+        with open(DB_FILE, 'w') as f:
+            json.dump(db, f, indent=4)
     elif db[key]["hwid"] != hwid:
         return jsonify({"status": "hwid_error"})
         
     return jsonify({"status": "ok"})
 
-if __name__ == '__main__': app.run(port=5000)
+# แก้ไขส่วนนี้สำคัญที่สุดเพื่อให้ Render รันได้
+if __name__ == '__main__':
+    # ดึงค่าพอร์ตจาก Render (ถ้าไม่มีให้ใช้ 10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
